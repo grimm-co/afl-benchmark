@@ -1,0 +1,70 @@
+# This file will show you what you need to do to run the benchmark.
+
+# If you have internet access:
+#git clone https://github.com/bnagy/afl-launch
+# If not:
+tar -Jxf afl-launch.tar.xz
+
+# Extract and compile AFL
+tar zxf afl-2.49b.tgz 
+cd afl-2.49b/
+make
+cd llvm_mode/
+sudo apt install llvm clang
+make
+cd ../..
+
+# Compile afl-launch
+cd afl-launch
+sudo apt install golang-go
+go build
+cd ..
+
+# Extract and compile the target (tar)
+cd targets/
+tar Jxf tar-1.29.tar.xz 
+cd tar-1.29/
+AFL_HARDEN=1 CC=`pwd`/../../afl-2.49b/afl-clang-fast ./configure
+AFL_HARDEN=1 CC=`pwd`/../../afl-2.49b/afl-clang-fast make
+cd ../..
+
+# tar is going to completely screw over the permissions of the cwd, so we need
+# to take precautions...
+chmod 755 run
+sudo chattr +i run  # makes the run directory immutable, so you can't chmod it
+cd run
+
+# Prep for running AFL:
+sudo su -c "echo core >/proc/sys/kernel/core_pattern"
+
+# Test AFL to make sure it's working properly
+../afl-2.49b/afl-fuzz -i ../afl-2.49b/testcases/archives/common/tar/ -o ../output/tar_test -- ../targets/tar-1.29/src/tar -x
+# It might throw errors about the kernel throttling the CPU.
+# If it does, it'll tell you have to fix in.
+# Once everything is fixed and you are sure AFL is working
+# properly, we're finally ready to do the benchmarking!
+
+NUMPROCS=`cat /proc/cpuinfo | grep processor | wc -l`
+PATH=$PATH:`pwd`/../afl-2.49b
+../afl-launch/afl-launch -no-master -n "$NUMPROCS" -i ../afl-2.49b/testcases/archives/common/tar/ -o ../output/tar -- ../targets/tar-1.29/src/tar -x
+cd ..
+echo "Chill for a few minutes while AFL does its thing"
+sleep $((60*3))  # Wait 3 minutes
+
+# Monitor statistics with afl-whatsup and afl-plot
+./afl-2.49b/afl-whatsup -s ./output/tar
+./combine_plot_data.py -o ./fake_output/plot_data -d 30 ./output/tar/*/plot_data
+sudo apt install gnuplot
+./afl-2.49b/afl-plot fake_output ./plot_output
+firefox ./plot_output/index.html
+
+# If you start the benchmark over, remember to clean out the
+# "output" directory first, or your stats will be all wrong
+
+# For comparison:
+
+# AMD Opteron(TM) Processor 6274 => ~10,700 executions per second
+# That's a 16-core CPU @ 2.2GHz running 16 instances of AFL
+
+# Intel(R) Core(TM) i7-5600U CPU => ~4,250 executions per second
+# That's a 2 physical core/4 logical core CPU @ 2.60GHz running 4 instances fo AFL
