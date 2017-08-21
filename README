@@ -1,22 +1,70 @@
 # This file will show you what you need to do to run the benchmark.
+PKGMGR='NULL'
 
-# If you have internet access:
-#git clone https://github.com/bnagy/afl-launch
-# If not:
-tar -Jxf afl-launch.tar.xz
+#
+# Detect Package Manager
+#
+# APT
+which apt &> /dev/null
+if [ $? = 0 ] && [ $PKGMGR = 'NULL' ]; then
+	PKGMGR='APT'
+	echo 'Package manager detected: Using apt'
+fi
+# DNF
+which dnf &> /dev/null
+if [ $? = 0 ] && [ $PKGMGR = 'NULL' ]; then
+	PKGMGR='DNF'
+	echo 'Package manager detected: Using dnf'
+fi
+# YUM
+which yum &> /dev/null
+if [ $? = 0 ] && [ $PKGMGR = 'NULL' ]; then
+	PKGMGR='YUM'
+	echo 'Package manager detected: Using yum'
+fi
 
+# Check for unknown package manager
+if [ $PKGMGR = 'NULL' ]
+then
+	echo 'Your package manager is not supported for an automated install.'
+	echo 'Please consider submitting a patch for your package manager or'
+	echo 'contact the developers.'
+	exit 1
+fi
+
+#
+# Install all dependencies up front
+#
+case $PKGMGR in
+	APT)
+		sudo apt install llvm clang golang-go gnuplot
+		;;
+	DNF)
+		sudo dnf install llvm clang llvm-devel golang gnuplot
+		;;
+	YUM)
+		sudo yum install llvm clang llvm-devel golang gnuplot
+		;;
+esac
+
+#
 # Extract and compile AFL
+#
 tar zxf afl-2.49b.tgz 
 cd afl-2.49b/
 make
 cd llvm_mode/
-sudo apt install llvm clang
 make
 cd ../..
 
+#
 # Compile afl-launch
+#
+# If you have internet access:
+#git clone https://github.com/bnagy/afl-launch
+# If not:
+tar -Jxf afl-launch.tar.xz
 cd afl-launch
-sudo apt install golang-go
 go build
 cd ..
 
@@ -54,7 +102,6 @@ sleep $((60*3))  # Wait 3 minutes
 # Monitor statistics with afl-whatsup and afl-plot
 ./afl-2.49b/afl-whatsup -s ./output/tar
 ./combine_plot_data.py -o ./fake_output/plot_data -d 30 ./output/tar/*/plot_data
-sudo apt install gnuplot
 ./afl-2.49b/afl-plot fake_output ./plot_output
 firefox ./plot_output/index.html
 
@@ -62,7 +109,6 @@ firefox ./plot_output/index.html
 # "output" directory first, or your stats will be all wrong
 
 # For comparison:
-
 # AMD Opteron(TM) Processor 6274 => ~10,700 executions per second
 # That's a 16-core CPU @ 2.2GHz running 16 instances of AFL
 
