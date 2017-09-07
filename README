@@ -1,4 +1,9 @@
 # This file will show you what you need to do to run the benchmark.
+# If you are feeling lazy, you can just run `bash README`
+
+
+### This section is just figuring out what package manager your
+### Linux distrubution has so the dependencies can be installed
 PKGMGR='NULL'
 
 #
@@ -32,21 +37,41 @@ then
 	exit 1
 fi
 
+### We use sudo when it is available, as it means entering a password only once
+SUDO=`which sudo`
+
 #
 # Install all dependencies up front
 #
 case $PKGMGR in
 	APT)
-		sudo apt install llvm clang golang-go gnuplot
+		if [[ "$SUDO" != "" ]]; then
+			sudo apt install llvm clang golang-go gnuplot make
+		else
+			echo "Installing dependencies, enter root password"
+			su -c "apt install llvm clang golang-go gnuplot make"
+		fi
 		;;
 	DNF)
-		sudo dnf install llvm clang llvm-devel golang gnuplot
+		if [[ "$SUDO" != "" ]]; then
+			sudo dnf install llvm clang llvm-devel golang gnuplot make
+		else
+			echo "Installing dependencies, enter root password"
+			su -c "dnf install llvm clang llvm-devel golang gnuplot make"
+		fi
 		;;
 	YUM)
-		sudo yum install llvm clang llvm-devel golang gnuplot
+		if [[ "$SUDO" != "" ]]; then
+			sudo yum install llvm clang llvm-devel golang gnuplot make
+		else
+			echo "Installing dependencies, enter root password"
+			su -c "yum install llvm clang llvm-devel golang gnuplot make"
+		fi
 		;;
 esac
 
+
+### Now that the dependencies are installed, we can move on to the more interesting stuff
 #
 # Extract and compile AFL
 #
@@ -78,14 +103,24 @@ cd ../..
 
 # tar is going to completely screw over the permissions of the cwd, so we need
 # to take precautions...
+mkdir -p run
 chmod 755 run
-sudo chattr +i run  # makes the run directory immutable, so you can't chmod it
+if [[ "$SUDO" != "" ]]; then
+	sudo chattr +i run  # makes the run directory immutable, so you can't chmod it
+else
+	su -c "chattr +i run"  # makes the run directory immutable, so you can't chmod it
+fi
 cd run
 
 # Prep for running AFL:
-sudo su -c "echo core >/proc/sys/kernel/core_pattern"
+if [[ "$SUDO" != "" ]]; then
+	sudo su -c "echo core >/proc/sys/kernel/core_pattern"
+else
+	su -c "echo core >/proc/sys/kernel/core_pattern"
+fi
 
 # Test AFL to make sure it's working properly
+mkdir -p ../output
 ../afl-2.49b/afl-fuzz -i ../afl-2.49b/testcases/archives/common/tar/ -o ../output/tar_test -- ../targets/tar-1.29/src/tar -x
 # It might throw errors about the kernel throttling the CPU.
 # If it does, it'll tell you have to fix in.
@@ -101,6 +136,7 @@ sleep $((60*3))  # Wait 3 minutes
 
 # Monitor statistics with afl-whatsup and afl-plot
 ./afl-2.49b/afl-whatsup -s ./output/tar
+mkdir -p fake_output
 ./combine_plot_data.py -o ./fake_output/plot_data -d 30 ./output/tar/*/plot_data
 ./afl-2.49b/afl-plot fake_output ./plot_output
 firefox ./plot_output/index.html
