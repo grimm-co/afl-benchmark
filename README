@@ -39,34 +39,24 @@ fi
 
 ### We use sudo when it is available, as it means entering a password only once
 SUDO=`which sudo`
+if [[ "$SUDO" != "" ]]; then
+	echo "When propmted for a password, it's your password (and you'll need sudo rights)"
+else
+	echo "When propmted for a password, it's the root password"
+fi
 
 #
 # Install all dependencies up front
 #
 case $PKGMGR in
 	APT)
-		if [[ "$SUDO" != "" ]]; then
-			sudo apt install llvm clang golang-go gnuplot make
-		else
-			echo "Installing dependencies, enter root password"
-			su -c "apt install llvm clang golang-go gnuplot make"
-		fi
+		$SUDO su -c "apt install llvm clang golang-go gnuplot make"
 		;;
 	DNF)
-		if [[ "$SUDO" != "" ]]; then
-			sudo dnf install llvm clang llvm-devel golang gnuplot make
-		else
-			echo "Installing dependencies, enter root password"
-			su -c "dnf install llvm clang llvm-devel golang gnuplot make"
-		fi
+		$SUDO su -c "dnf install llvm clang llvm-devel golang gnuplot make"
 		;;
 	YUM)
-		if [[ "$SUDO" != "" ]]; then
-			sudo yum install llvm clang llvm-devel golang gnuplot make
-		else
-			echo "Installing dependencies, enter root password"
-			su -c "yum install llvm clang llvm-devel golang gnuplot make"
-		fi
+		$SUDO su -c "yum install llvm clang llvm-devel golang gnuplot make"
 		;;
 esac
 
@@ -105,19 +95,11 @@ cd ../..
 # to take precautions...
 mkdir -p run
 chmod 755 run
-if [[ "$SUDO" != "" ]]; then
-	sudo chattr +i run  # makes the run directory immutable, so you can't chmod it
-else
-	su -c "chattr +i run"  # makes the run directory immutable, so you can't chmod it
-fi
 cd run
 
 # Prep for running AFL:
-if [[ "$SUDO" != "" ]]; then
-	sudo su -c "echo core >/proc/sys/kernel/core_pattern"
-else
-	su -c "echo core >/proc/sys/kernel/core_pattern"
-fi
+# chattr +i makes the run directory immutable, so you can't chmod it (otherwise tar can change permissions on ".")
+$SUDO su -c "chattr +i .; echo core >/proc/sys/kernel/core_pattern; cd /sys/devices/system/cpu; echo performance | tee cpu*/cpufreq/scaling_governor"
 
 # Test AFL to make sure it's working properly
 mkdir -p ../output
