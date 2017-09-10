@@ -1,5 +1,6 @@
 # This file will show you what you need to do to run the benchmark.
 # If you are feeling lazy, you can just run `bash README`
+VERSION=2.51b
 
 
 ### This section is just figuring out what package manager your
@@ -65,8 +66,8 @@ esac
 #
 # Extract and compile AFL
 #
-tar zxf afl-2.49b.tgz 
-cd afl-2.49b/
+tar zxf afl-$VERSION.tgz
+cd afl-$VERSION/
 make
 cd llvm_mode/
 make
@@ -87,8 +88,8 @@ cd ..
 cd targets/
 tar Jxf tar-1.29.tar.xz 
 cd tar-1.29/
-AFL_HARDEN=1 CC=`pwd`/../../afl-2.49b/afl-clang-fast ./configure
-AFL_HARDEN=1 CC=`pwd`/../../afl-2.49b/afl-clang-fast make
+AFL_HARDEN=1 CC=`pwd`/../../afl-$VERSION/afl-clang-fast ./configure
+AFL_HARDEN=1 CC=`pwd`/../../afl-$VERSION/afl-clang-fast make
 cd ../..
 
 # tar is going to completely screw over the permissions of the cwd, so we need
@@ -103,24 +104,24 @@ $SUDO su -c "chattr +i .; echo core >/proc/sys/kernel/core_pattern; cd /sys/devi
 
 # Test AFL to make sure it's working properly
 mkdir -p ../output
-../afl-2.49b/afl-fuzz -i ../afl-2.49b/testcases/archives/common/tar/ -o ../output/tar_test -- ../targets/tar-1.29/src/tar -x --file /dev/null
+../afl-$VERSION/afl-fuzz -i ../afl-$VERSION/testcases/archives/common/tar/ -o ../output/tar_test -- ../targets/tar-1.29/src/tar -x
 # It might throw errors about the kernel throttling the CPU.
 # If it does, it'll tell you have to fix in.
 # Once everything is fixed and you are sure AFL is working
 # properly, we're finally ready to do the benchmarking!
 
 NUMPROCS=`cat /proc/cpuinfo | grep processor | wc -l`
-PATH=$PATH:`pwd`/../afl-2.49b
-../afl-launch/afl-launch -no-master -n "$NUMPROCS" -i ../afl-2.49b/testcases/archives/common/tar/ -o ../output/tar -- ../targets/tar-1.29/src/tar -x --file /dev/null
+PATH=$PATH:`pwd`/../afl-$VERSION
+../afl-launch/afl-launch -no-master -n "$NUMPROCS" -i ../afl-$VERSION/testcases/archives/common/tar/ -o ../output/tar -- ../targets/tar-1.29/src/tar -x
 cd ..
 echo "Chill for a few minutes while AFL does its thing"
 sleep $((60*3))  # Wait 3 minutes
 
 # Monitor statistics with afl-whatsup and afl-plot
-./afl-2.49b/afl-whatsup -s ./output/tar
+./afl-$VERSION/afl-whatsup -s ./output/tar
 mkdir -p fake_output
 ./combine_plot_data.py -o ./fake_output/plot_data -d 30 ./output/tar/*/plot_data
-./afl-2.49b/afl-plot fake_output ./plot_output
+./afl-$VERSION/afl-plot fake_output ./plot_output
 firefox ./plot_output/index.html
 
 # If you start the benchmark over, remember to clean out the
@@ -136,5 +137,5 @@ firefox ./plot_output/index.html
 # Intel(R) Core(TM) i7-5600U CPU => ~4,250 executions per second
 # That's a 2 physical core/4 logical core CPU @ 2.60GHz running 4 instances fo AFL
 
-# Quad-CPU Operton(TM) Processor 6276 = ~36,300 executions per second
+# Quad-CPU Operton(TM) Processor 6276 = ~35,500 executions per second
 # This is a computer with four 16-core CPUs running @ 2.3GHz, 64 instancs of AFL
