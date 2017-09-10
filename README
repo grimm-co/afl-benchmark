@@ -103,7 +103,7 @@ $SUDO su -c "chattr +i .; echo core >/proc/sys/kernel/core_pattern; cd /sys/devi
 
 # Test AFL to make sure it's working properly
 mkdir -p ../output
-../afl-2.49b/afl-fuzz -i ../afl-2.49b/testcases/archives/common/tar/ -o ../output/tar_test -- ../targets/tar-1.29/src/tar -x
+../afl-2.49b/afl-fuzz -i ../afl-2.49b/testcases/archives/common/tar/ -o ../output/tar_test -- ../targets/tar-1.29/src/tar -x --file /dev/null
 # It might throw errors about the kernel throttling the CPU.
 # If it does, it'll tell you have to fix in.
 # Once everything is fixed and you are sure AFL is working
@@ -111,7 +111,7 @@ mkdir -p ../output
 
 NUMPROCS=`cat /proc/cpuinfo | grep processor | wc -l`
 PATH=$PATH:`pwd`/../afl-2.49b
-../afl-launch/afl-launch -no-master -n "$NUMPROCS" -i ../afl-2.49b/testcases/archives/common/tar/ -o ../output/tar -- ../targets/tar-1.29/src/tar -x
+../afl-launch/afl-launch -no-master -n "$NUMPROCS" -i ../afl-2.49b/testcases/archives/common/tar/ -o ../output/tar -- ../targets/tar-1.29/src/tar -x --file /dev/null
 cd ..
 echo "Chill for a few minutes while AFL does its thing"
 sleep $((60*3))  # Wait 3 minutes
@@ -130,8 +130,11 @@ firefox ./plot_output/index.html
 # AMD Opteron(TM) Processor 6274 => ~10,700 executions per second
 # That's a 16-core CPU @ 2.2GHz running 16 instances of AFL
 
+# AMD Opteron(tm) Processor 6386 SE => ~14,500 executions per second
+# That's a 16-core CPU @ 2.8GHz running 16 instances of AFL
+
 # Intel(R) Core(TM) i7-5600U CPU => ~4,250 executions per second
 # That's a 2 physical core/4 logical core CPU @ 2.60GHz running 4 instances fo AFL
 
-# Quad-CPU Operton(TM) Processor 6276 = ~35,500 executions per second
+# Quad-CPU Operton(TM) Processor 6276 = ~36,300 executions per second
 # This is a computer with four 16-core CPUs running @ 2.3GHz, 64 instancs of AFL
