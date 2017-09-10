@@ -132,3 +132,6 @@ firefox ./plot_output/index.html
 
 # Intel(R) Core(TM) i7-5600U CPU => ~4,250 executions per second
 # That's a 2 physical core/4 logical core CPU @ 2.60GHz running 4 instances fo AFL
+
+# Quad-CPU Operton(TM) Processor 6276 = ~35,500 executions per second
+# This is a computer with four 16-core CPUs running @ 2.3GHz, 64 instancs of AFL
