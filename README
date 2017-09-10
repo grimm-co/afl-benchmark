@@ -128,14 +128,14 @@ firefox ./plot_output/index.html
 # "output" directory first, or your stats will be all wrong
 
 # For comparison:
-# AMD Opteron(TM) Processor 6274 => ~10,700 executions per second
+# AMD Opteron(TM) Processor 6274 => ~11,100 executions per second
 # That's a 16-core CPU @ 2.2GHz running 16 instances of AFL
 
-# AMD Opteron(tm) Processor 6386 SE => ~14,500 executions per second
+# AMD Opteron(tm) Processor 6386 SE => ~13,700 executions per second
 # That's a 16-core CPU @ 2.8GHz running 16 instances of AFL
 
 # Intel(R) Core(TM) i7-5600U CPU => ~4,250 executions per second
 # That's a 2 physical core/4 logical core CPU @ 2.60GHz running 4 instances fo AFL
 
-# Quad-CPU Operton(TM) Processor 6276 = ~35,500 executions per second
+# Quad-CPU Operton(TM) Processor 6276 = ~34,000 executions per second
 # This is a computer with four 16-core CPUs running @ 2.3GHz, 64 instancs of AFL
